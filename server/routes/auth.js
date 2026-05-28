@@ -17,13 +17,17 @@ router.post('/register', authLimiter, authController.register);
 
 //verify email
 router.get('/verify/:token', authController.verifyEmail);
-//login 
-//router.post('/login', authLimiter, authController.login);
 
-//reset password
-//router.post("/reset-password", authLimiter, authController.resetPassword);
+//login 
+router.post('/login', authLimiter, authController.login);
+
+// User submits email to request a reset link
+router.post("/reset-password", authLimiter, authController.requestPasswordReset);
+
+// User submits new password using the token from email
+router.post("/reset-password/:token", authLimiter, authController.resetPassword);
 
 //logout
-//router.post('/logout', authController.logout);
+router.post('/logout', authController.logout);
 
 module.exports = router; 
