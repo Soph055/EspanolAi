@@ -69,3 +69,28 @@ exports.register = async (req, res) => {
         return res.status(500).json({ message: "Error creating user" });
     }
 }
+
+//--------Verify Email--------
+exports.verifyEmail = async (req, res) => {
+    //grab token from the url (/auth/verify/:token)
+    const token = req.params.token;
+
+    try {
+        //find user by token, mark verified, wipe the token so it cant be reused
+        const result = await db.query(
+            "UPDATE users SET is_verified = TRUE, verify_token = NULL WHERE verify_token = $1",
+            [token]
+        );
+
+        //rowCount 0 = no matching token, so its invalid/expired/already used
+        if (result.rowCount === 0) {
+            return res.status(400).json({ message: "Invalid or expired verification link" });
+        }
+
+        return res.status(200).json({ message: "Email verified! You can now log in" });
+
+    } catch (err) {
+        logger.error("[authController.verifyEmail]", err);
+        return res.status(500).json({ message: "Verification failed" });
+    }
+};

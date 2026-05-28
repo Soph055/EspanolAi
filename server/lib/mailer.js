@@ -1,5 +1,7 @@
+require('dotenv').config();
 const nodemailer = require("nodemailer");
 const logger = require("./logger");
+
 
 //configured email sender used across the app
 const transporter = nodemailer.createTransport({
