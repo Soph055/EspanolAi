@@ -22,10 +22,10 @@ router.get('/verify/:token', authController.verifyEmail);
 router.post('/login', authLimiter, authController.login);
 
 // User submits email to request a reset link
-router.post("/reset-password", authLimiter, authController.requestPasswordReset);
+router.post("/reset-password", authLimiter, authController.requestResetPassword);
 
 // User submits new password using the token from email
-router.post("/reset-password/:token", authLimiter, authController.resetPassword);
+router.post("/reset-password/:token", authLimiter, authController.confirmPasswordReset);
 
 //logout
 router.post('/logout', authController.logout);

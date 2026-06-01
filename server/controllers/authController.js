@@ -19,6 +19,9 @@ const registerSchema = z.object({
         .regex(/[!@#$%^&*]/, "Password must contain a special symbol"),
 });
 
+const emailSchema = registerSchema.pick({ email: true });
+const resetPasswordSchema = registerSchema.pick({ password: true });
+
 // -------- Registration --------
 exports.register = async (req, res) => {
     // Validate request body
@@ -90,7 +93,14 @@ exports.verifyEmail = async (req, res) => {
 
 // -------- Login --------
 exports.login = async (req, res) => {
-    const { email, password } = req.body;
+    const result = emailSchema.safeParse({ email: req.body.email });
+
+    if (!result.success) {
+        return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const { email } = result.data;
+    const { password } = req.body;
 
     try {
         // Look up user by email
@@ -151,9 +161,95 @@ exports.logout = async (req, res) => {
     return res.status(200).json({ message: "Logged out" });
 };
 
-// -------- Reset Password --------
-exports.resetPassword = async (req, res) => {
-    
-}
 
+// -------- Request Password Reset --------
+exports.requestResetPassword = async (req, res) => {
+    // Validate input
+    const result = emailSchema.safeParse(req.body);
+
+    if (!result.success) {
+        return res.status(400).json({ message: result.error.issues[0].message });
+    }
+
+    const { email } = result.data;
+
+    try {
+        // Generate token and 1-hour expiry
+        const resetToken = crypto.randomBytes(32).toString("hex");
+        const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
+
+        // Attach reset token to user if email exists
+        const data = await db.query(
+            "UPDATE users SET reset_token = $1, reset_token_expiry = $2 WHERE email = $3",
+            [resetToken, resetTokenExpiry, email]
+        );
+
+        // Only send email if a user was actually found
+        if (data.rowCount > 0) {
+            const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+            sendEmail({
+                to: email,
+                subject: "Reset your EspañolAI password",
+                html: `<p>You requested a password reset for your EspañolAI account.</p>
+                       <p>Click the link below to set a new password. This link expires in 1 hour.</p>
+                       <a href="${resetURL}">${resetURL}</a>
+                       <p>If you didn't request this, you can safely ignore this email.</p>`,
+            }).catch(err => logger.error("[requestResetPassword sendEmail]", err));
+
+            logger.info(`Password reset requested for: ${email}`);
+        }
+
+        // Same response regardless of whether email exists
+        return res.status(200).json({
+            message: "If an account with that email exists, a reset link has been sent"
+        });
+
+    } catch (err) {
+        logger.error("[authController.requestResetPassword]", err);
+        return res.status(500).json({ message: "Server error" });
+    }
+};
 // -------- Confirm Password Reset --------
+
+exports.confirmPasswordReset = async (req, res) => {
+    const result = resetPasswordSchema.safeParse(req.body);
+    if (!result.success) {
+        return res.status(400).json({ message: result.error.issues[0].message });
+    }
+
+    const { password } = result.data;
+    const token = req.params.token;
+
+    try {
+        const data = await db.query(
+            `SELECT id, reset_token_expiry FROM users WHERE reset_token = $1`,
+            [token]
+        );
+
+        const user = data.rows[0];
+
+        if (!user) {
+            return res.status(400).json({ message: "Invalid or expired reset link" });
+
+        }
+
+        if (new Date() > new Date(user.reset_token_expiry)) {
+            return res.status(400).json({ message: "Invalid or expired reset link" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        await db.query(
+            "UPDATE users SET password = $1, reset_token = NULL, reset_token_expiry = NULL WHERE id = $2",
+            [hashedPassword, user.id]
+        );
+        logger.info(`Password reset completed for user id: ${user.id}`);
+        return res.status(200).json({ message: "Password reset successful. You can now log in." });
+
+    } catch (err) {
+        logger.error("[authController.confirmPasswordReset]", err);
+        return res.status(500).json({ message: "Failed to reset password" });
+
+    }
+};
