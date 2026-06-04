@@ -13,7 +13,6 @@ const authLimiter = rateLimit({
 
 //register 
 router.post('/register', authLimiter, authController.register);
-//verify email (to potentially be done much much later...)
 
 //verify email
 router.get('/verify/:token', authController.verifyEmail);

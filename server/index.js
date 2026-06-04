@@ -22,11 +22,13 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 //Routers
  const authRouter = require('./routes/auth.js');
- const correctionsRouter = requre('./routes/corrections.js');
+ const chatRouter = require('./routes/chat.js')
+
 
  //Routing
  app.use('/auth', authRouter);
- app.use('/correct', correctionsRouter); 
+ app.use('/chat', chatRouter);
+
 
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
