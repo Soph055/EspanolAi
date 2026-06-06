@@ -1,5 +1,6 @@
-const winston = require('winston'); //logging library
-const path = require('path'); //helps build proper file paths that work on any OS
+import winston from 'winston';//logging library
+import path from 'path'; //helps build proper file paths that work on any OS
+
 
 const logger = winston.createLogger({
     // minimum level to log
@@ -51,4 +52,4 @@ const logger = winston.createLogger({
     ],
 });
 
-module.exports = logger;
+export default logger;

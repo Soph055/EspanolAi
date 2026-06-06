@@ -1,20 +1,21 @@
-const db = require("../db/db");
-const logger = require("../lib/logger");
-const { generateContent } = require("../lib/gemini");
-const { z } = require("zod");
+import { Request, Response} from 'express';
+import db from '../db/db';
+import logger from '../lib/logger';
+import { generateContent} from '../lib/gemini'
+import {z} from 'zod';
 
 const createConversationSchema = z.object({
     title: z.string().trim().max(100).optional(),
 });
 
-exports.createConversation = async (req, res) => {
+export const createConversation = async (req: Request, res:Response): Promise<Response> => {
     const parsed = createConversationSchema.safeParse(req.body);
 
     if (!parsed.success) {
         return res.status(400).json({ message: parsed.error.issues[0].message });
     }
 
-    const userId = req.user.id;
+    const userId = req.user?.id;
     const { title } = parsed.data;
 
     try {

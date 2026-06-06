@@ -1,10 +1,12 @@
-require('dotenv').config();
-const express = require('express'); //express framework
-const cors = require('cors'); //cors to allow frontend to talk to backend
-const helmet = require('helmet'); //adds security headers to every response
-const cookieParser = require('cookie-parser'); //allows reading cookies from incomming requests
-const morgan = require('morgan');
-
+import 'dotenv/config';
+import express from 'express'; //express framework
+import cors from 'cors'; //cors to allow frontend to talk to backend
+import helmet from 'helmet'; //adds security headers to every response
+import cookieParser from 'cookie-parser'; //allows reading cookies from incomming requests
+import morgan from 'morgan';
+//Routers
+import authRouter from './routes/auth';
+import chatRouter from './routes/chat';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -20,9 +22,7 @@ app.use(helmet({ contentSecurityPolicy: false }));// contentSecurityPolicy is tu
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 
-//Routers
- const authRouter = require('./routes/auth.js');
- const chatRouter = require('./routes/chat.js')
+
 
 
  //Routing

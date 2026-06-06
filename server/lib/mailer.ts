@@ -1,7 +1,6 @@
-require('dotenv').config();
-const nodemailer = require("nodemailer");
-const logger = require("./logger");
-
+import 'dotenv/config';
+import * as nodemailer from 'nodemailer';
+import logger from './logger';
 
 //configured email sender used across the app
 const transporter = nodemailer.createTransport({
@@ -12,8 +11,16 @@ const transporter = nodemailer.createTransport({
     },
 });
 
+interface EmailOptions{
+    to: string;
+    subject: string;
+    html: string;
+    replyTo?: string;
+
+}
+
 //generic send function
-async function sendEmail({to, subject, html, replyTo}) {
+async function sendEmail({to, subject, html, replyTo} : EmailOptions): Promise<void> {
 
     try {
         await transporter.sendMail({
@@ -29,4 +36,5 @@ async function sendEmail({to, subject, html, replyTo}) {
         throw err;
     }
 }
-module.exports = {sendEmail};
+export { sendEmail };
+

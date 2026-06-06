@@ -1,8 +1,9 @@
-const express = require('express');
+import express from "express";
+import * as authController from "../controllers/authController";
+import requireAuth from "../middleware/authMiddleware";
+import { rateLimit } from "express-rate-limit";
+
 const router = express.Router();
-const authController = require('../controllers/authController');
-const requireAuth = require('../middleware/authMiddleware');
-const { rateLimit } = require('express-rate-limit');
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, //15 minute window
@@ -29,4 +30,4 @@ router.post("/reset-password/:token", authLimiter, authController.confirmPasswor
 //logout
 router.post('/logout', authController.logout);
 
-module.exports = router; 
+export default router; 

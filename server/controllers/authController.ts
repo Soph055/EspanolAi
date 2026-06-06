@@ -1,10 +1,15 @@
-const db = require("../db/db");
-const bcrypt = require("bcrypt");
-const crypto = require("crypto");
-const jwt = require("jsonwebtoken");
-const logger = require("../lib/logger");
-const { z } = require("zod");
-const { sendEmail } = require("../lib/mailer");
+import { Request, Response } from 'express';
+import db from '../db/db';
+import bcrypt from 'bcrypt'
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+import { z } from "zod";
+import logger from "../lib/logger";
+import { sendEmail } from "../lib/mailer";
+
+interface PgError extends Error {
+    code?: string;
+}
 
 // Registration input schema
 const registerSchema = z.object({
@@ -22,8 +27,13 @@ const registerSchema = z.object({
 const emailSchema = registerSchema.pick({ email: true });
 const resetPasswordSchema = registerSchema.pick({ password: true });
 
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    throw new Error("JWT_SECRET is not set");
+}
+
 // -------- Registration --------
-exports.register = async (req, res) => {
+export const register = async (req: Request, res: Response): Promise<Response> => {
     // Validate request body
     const result = registerSchema.safeParse(req.body);
 
@@ -45,7 +55,7 @@ exports.register = async (req, res) => {
         );
 
         // Build verification URL and send email
-        const verifyURL = `${process.env.FRONTEND_URL}/verify/${verifyToken}`;
+        const verifyURL = `${process.env.FRONTEND_URL}/auth/verify/${verifyToken}`;
 
         sendEmail({
             to: email,
@@ -60,7 +70,8 @@ exports.register = async (req, res) => {
 
     } catch (err) {
         // Handle duplicate email
-        if (err.code === '23505') {
+        const pgErr = err as PgError;
+        if (pgErr.code === '23505') {
             return res.status(409).json({ message: "Email already registered" });
         }
         logger.error("[authController.register]", err);
@@ -69,7 +80,7 @@ exports.register = async (req, res) => {
 };
 
 // -------- Verify Email --------
-exports.verifyEmail = async (req, res) => {
+export const verifyEmail = async (req: Request, res: Response): Promise<Response> => {
     const token = req.params.token;
 
     try {
@@ -92,15 +103,19 @@ exports.verifyEmail = async (req, res) => {
 };
 
 // -------- Login --------
-exports.login = async (req, res) => {
-    const result = emailSchema.safeParse({ email: req.body.email });
+export const login = async (req: Request, res: Response): Promise<Response> => {
+    const parsed = emailSchema.safeParse({ email: req.body.email });
 
-    if (!result.success) {
+    if (!parsed.success) {
         return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const { email } = result.data;
+    const { email } = parsed.data;
     const { password } = req.body;
+
+    if (!password) {
+        return res.status(401).json({ message: "Invalid credentials" });
+    }
 
     try {
         // Look up user by email
@@ -129,7 +144,7 @@ exports.login = async (req, res) => {
         // Issue JWT
         const token = jwt.sign(
             { id: user.id, email: email },
-            process.env.JWT_SECRET,
+            JWT_SECRET,
             { expiresIn: "1h" }
         );
 
@@ -151,7 +166,7 @@ exports.login = async (req, res) => {
 };
 
 // -------- Logout --------
-exports.logout = async (req, res) => {
+export const logout = async (req: Request, res: Response): Promise<Response> => {
     // Clear authentication cookie
     res.clearCookie("token", {
         httpOnly: true,
@@ -163,7 +178,7 @@ exports.logout = async (req, res) => {
 
 
 // -------- Request Password Reset --------
-exports.requestResetPassword = async (req, res) => {
+export const requestResetPassword = async (req: Request, res: Response): Promise<Response> => {
     // Validate input
     const result = emailSchema.safeParse(req.body);
 
@@ -185,8 +200,8 @@ exports.requestResetPassword = async (req, res) => {
         );
 
         // Only send email if a user was actually found
-        if (data.rowCount > 0) {
-            const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+        if (data.rowCount && data.rowCount > 0) {
+            const resetURL = `${process.env.FRONTEND_URL}/auth/reset-password/${resetToken}`;
 
             sendEmail({
                 to: email,
@@ -212,7 +227,7 @@ exports.requestResetPassword = async (req, res) => {
 };
 // -------- Confirm Password Reset --------
 
-exports.confirmPasswordReset = async (req, res) => {
+export const confirmPasswordReset = async (req: Request, res: Response): Promise<Response> => {
     const result = resetPasswordSchema.safeParse(req.body);
     if (!result.success) {
         return res.status(400).json({ message: result.error.issues[0].message });
