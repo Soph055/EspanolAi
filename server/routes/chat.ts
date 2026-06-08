@@ -6,9 +6,14 @@ const router = express.Router();
 
 router.post("/conversations", requireAuth, chatController.createConversation);
 
+// returns and lists  all existing conversations for user
+router.get("/conversations", requireAuth, chatController.getConversations);
+
 export default router;
- //get exisiting chat
- //router.get("/conversations", requireAuth, );
+
+
+ //get all exisiting chat messages for a conversation 
+ router.get("/conversations/:id/messages", requireAuth, chatController.getAllMessages);
 
  //router.get("/conversations/:id/messages", requireAuth);
 
