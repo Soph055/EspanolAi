@@ -15,6 +15,8 @@ export default router;
  //get all exisiting chat messages for a conversation 
  router.get("/conversations/:id/messages", requireAuth, chatController.getAllMessages);
 
+
+ router.post("/conversations/:id/messages", requireAuth, chatController.sendMessage);
  //router.get("/conversations/:id/messages", requireAuth);
 
 

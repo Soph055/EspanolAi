@@ -22,13 +22,10 @@ app.use(helmet({ contentSecurityPolicy: false }));// contentSecurityPolicy is tu
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 
-
-
-
  //Routing
  app.use('/auth', authRouter);
  app.use('/chat', chatRouter);
-
+ 
 
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
