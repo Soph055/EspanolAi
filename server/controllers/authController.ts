@@ -1,17 +1,18 @@
 import { Request, Response } from 'express';
 import db from '../db/db';
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { z } from "zod";
 import logger from "../lib/logger";
 import { sendEmail } from "../lib/mailer";
 
+// Type for Postgres errors so we can safely access .code in catch blocks
 interface PgError extends Error {
     code?: string;
 }
 
-// Registration input schema
+// Registration input schema - enforces strong password and proper name/email format
 const registerSchema = z.object({
     firstName: z.string().trim().min(1, "First name is required"),
     lastName: z.string().trim().min(1, "Last name is required"),
@@ -24,17 +25,22 @@ const registerSchema = z.object({
         .regex(/[!@#$%^&*]/, "Password must contain a special symbol"),
 });
 
+// Derived schemas - pick just the fields we need for these endpoints (DRY)
 const emailSchema = registerSchema.pick({ email: true });
 const resetPasswordSchema = registerSchema.pick({ password: true });
 
+// Fail fast on startup if JWT_SECRET is missing - safer than crashing on first login
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
     throw new Error("JWT_SECRET is not set");
 }
 
-// -------- Registration --------
+// -------- Register --------
+// Creates a new user account. Password is hashed with bcrypt (12 rounds),
+// a verification token is generated, and a verification email is sent.
+// The user can't log in until they verify via the emailed link.
 export const register = async (req: Request, res: Response): Promise<Response> => {
-    // Validate request body
+    // Validate input - returns 400 with the first Zod error message if anything's invalid
     const result = registerSchema.safeParse(req.body);
 
     if (!result.success) {
@@ -44,17 +50,19 @@ export const register = async (req: Request, res: Response): Promise<Response> =
     const { firstName, lastName, email, password } = result.data;
 
     try {
-        // Hash password and generate verification token
+        // Hash password with bcrypt - never store plaintext passwords
         const hashedPassword = await bcrypt.hash(password, 12);
+
+        // Generate a random verification token - 32 random bytes hex-encoded
         const verifyToken = crypto.randomBytes(32).toString("hex");
 
-        // Insert new user
+        // Insert new user (not yet verified, will be set true after they click the email link)
         await db.query(
             "INSERT INTO users (first_name, last_name, email, password, verify_token) VALUES ($1, $2, $3, $4, $5)",
             [firstName, lastName, email, hashedPassword, verifyToken]
         );
 
-        // Build verification URL and send email
+        // Build verification URL and send email (fire-and-forget - don't block response on email send)
         const verifyURL = `${process.env.FRONTEND_URL}/auth/verify/${verifyToken}`;
 
         sendEmail({
@@ -69,7 +77,7 @@ export const register = async (req: Request, res: Response): Promise<Response> =
         return res.status(201).json({ message: "User registered. Please verify your email." });
 
     } catch (err) {
-        // Handle duplicate email
+        // Handle duplicate email (Postgres unique constraint violation = error code 23505)
         const pgErr = err as PgError;
         if (pgErr.code === '23505') {
             return res.status(409).json({ message: "Email already registered" });
@@ -80,16 +88,19 @@ export const register = async (req: Request, res: Response): Promise<Response> =
 };
 
 // -------- Verify Email --------
+// Marks a user as verified using the token from the verification email.
+// Token is single-use - cleared on successful verification.
 export const verifyEmail = async (req: Request, res: Response): Promise<Response> => {
     const token = req.params.token;
 
     try {
-        // Mark user verified and clear token
+        // Mark user verified AND clear the token in one query - prevents token reuse
         const result = await db.query(
             "UPDATE users SET is_verified = TRUE, verify_token = NULL WHERE verify_token = $1",
             [token]
         );
 
+        // If no row matched, the token was invalid or already used
         if (result.rowCount === 0) {
             return res.status(400).json({ message: "Invalid or expired verification link" });
         }
@@ -103,7 +114,10 @@ export const verifyEmail = async (req: Request, res: Response): Promise<Response
 };
 
 // -------- Login --------
+// Validates credentials and issues a JWT in an httpOnly cookie.
+// Uses generic "Invalid credentials" for all auth failures to prevent email enumeration.
 export const login = async (req: Request, res: Response): Promise<Response> => {
+    // Validate email shape only - password is checked separately to avoid leaking which field failed
     const parsed = emailSchema.safeParse({ email: req.body.email });
 
     if (!parsed.success) {
@@ -113,6 +127,7 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
     const { email } = parsed.data;
     const { password } = req.body;
 
+    // Extra check in case frontend validation is bypassed
     if (!password) {
         return res.status(401).json({ message: "Invalid credentials" });
     }
@@ -126,29 +141,31 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
 
         const user = result.rows[0];
 
+        // Same generic message whether user doesn't exist or password is wrong
         if (!user) {
             return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        // Verify password
+        // Verify password against stored hash with bcrypt
         const match = await bcrypt.compare(password, user.password);
         if (!match) {
             return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        // Require verified email
+        // Require verified email - 403 here is different from 401 because credentials WERE valid
         if (!user.is_verified) {
             return res.status(403).json({ message: "Please verify your email before logging in" });
         }
 
-        // Issue JWT
+        // Sign a 1-hour JWT with the user's id and email
         const token = jwt.sign(
             { id: user.id, email: email },
             JWT_SECRET,
             { expiresIn: "1h" }
         );
 
-        // Set authentication cookie
+        // Set the JWT as an httpOnly cookie so JavaScript can't access it (XSS protection)
+        // sameSite: strict prevents CSRF, secure: production-only HTTPS requirement
         res.cookie("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
@@ -166,8 +183,9 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
 };
 
 // -------- Logout --------
+// Clears the auth cookie. No DB operation needed since JWTs are stateless.
 export const logout = async (req: Request, res: Response): Promise<Response> => {
-    // Clear authentication cookie
+    // Must use the same cookie options as when setting it, otherwise browser won't clear
     res.clearCookie("token", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -176,10 +194,10 @@ export const logout = async (req: Request, res: Response): Promise<Response> => 
     return res.status(200).json({ message: "Logged out" });
 };
 
-
 // -------- Request Password Reset --------
+// Generates a reset token and emails it to the user (if the email exists in our system).
+// Returns the same response whether the email exists or not - prevents email enumeration.
 export const requestResetPassword = async (req: Request, res: Response): Promise<Response> => {
-    // Validate input
     const result = emailSchema.safeParse(req.body);
 
     if (!result.success) {
@@ -189,17 +207,18 @@ export const requestResetPassword = async (req: Request, res: Response): Promise
     const { email } = result.data;
 
     try {
-        // Generate token and 1-hour expiry
+        // Generate a random reset token with a 1-hour expiry
         const resetToken = crypto.randomBytes(32).toString("hex");
         const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
 
-        // Attach reset token to user if email exists
+        // Attach reset token to user IF the email exists (silently does nothing if not)
         const data = await db.query(
             "UPDATE users SET reset_token = $1, reset_token_expiry = $2 WHERE email = $3",
             [resetToken, resetTokenExpiry, email]
         );
 
-        // Only send email if a user was actually found
+        // Only send the email if we actually matched a user
+        // (truthy check handles the null case TypeScript warns about for rowCount)
         if (data.rowCount && data.rowCount > 0) {
             const resetURL = `${process.env.FRONTEND_URL}/auth/reset-password/${resetToken}`;
 
@@ -215,7 +234,7 @@ export const requestResetPassword = async (req: Request, res: Response): Promise
             logger.info(`Password reset requested for: ${email}`);
         }
 
-        // Same response regardless of whether email exists
+        // Same response regardless of whether the email exists - prevents leaking which emails are registered
         return res.status(200).json({
             message: "If an account with that email exists, a reset link has been sent"
         });
@@ -225,8 +244,10 @@ export const requestResetPassword = async (req: Request, res: Response): Promise
         return res.status(500).json({ message: "Server error" });
     }
 };
-// -------- Confirm Password Reset --------
 
+// -------- Confirm Password Reset --------
+// Validates the reset token and updates the user's password.
+// Token is single-use and expires after 1 hour.
 export const confirmPasswordReset = async (req: Request, res: Response): Promise<Response> => {
     const result = resetPasswordSchema.safeParse(req.body);
     if (!result.success) {
@@ -237,6 +258,7 @@ export const confirmPasswordReset = async (req: Request, res: Response): Promise
     const token = req.params.token;
 
     try {
+        // Look up user by reset token
         const data = await db.query(
             `SELECT id, reset_token_expiry FROM users WHERE reset_token = $1`,
             [token]
@@ -244,27 +266,30 @@ export const confirmPasswordReset = async (req: Request, res: Response): Promise
 
         const user = data.rows[0];
 
+        // Same message for "no token match" and "expired token" to keep things vague
         if (!user) {
             return res.status(400).json({ message: "Invalid or expired reset link" });
-
         }
 
+        // Check expiry - tokens are valid for 1 hour after request
         if (new Date() > new Date(user.reset_token_expiry)) {
             return res.status(400).json({ message: "Invalid or expired reset link" });
         }
 
+        // Hash the new password
         const hashedPassword = await bcrypt.hash(password, 12);
 
+        // Update password AND clear the reset token in one query so it can't be reused
         await db.query(
             "UPDATE users SET password = $1, reset_token = NULL, reset_token_expiry = NULL WHERE id = $2",
             [hashedPassword, user.id]
         );
+
         logger.info(`Password reset completed for user id: ${user.id}`);
         return res.status(200).json({ message: "Password reset successful. You can now log in." });
 
     } catch (err) {
         logger.error("[authController.confirmPasswordReset]", err);
         return res.status(500).json({ message: "Failed to reset password" });
-
     }
 };
