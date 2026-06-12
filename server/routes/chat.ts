@@ -3,22 +3,20 @@ import * as chatController from "../controllers/chatController";
 import requireAuth from "../middleware/authMiddleware";
 
 const router = express.Router();
-//create new conversation
+
+// Create new conversation
 router.post("/conversations", requireAuth, chatController.createConversation);
 
-// returns and lists  all existing conversations for user
+// List all existing conversations for the user
 router.get("/conversations", requireAuth, chatController.getConversations);
 
+// Get all messages for a specific conversation
+router.get("/conversations/:id/messages", requireAuth, chatController.getAllMessages);
 
+// Send a new chat message and get the AI response (uses full history for context)
+router.post("/conversations/:id/messages", requireAuth, chatController.sendMessage);
 
- //get all exisiting chat messages for a conversation 
- router.get("/conversations/:id/messages", requireAuth, chatController.getAllMessages);
+// Delete a conversation (messages cascade automatically via FK)
+router.delete("/conversations/:id", requireAuth, chatController.deleteConversation);
 
-//send chat message with history and get response 
- router.post("/conversations/:id/messages", requireAuth, chatController.sendMessage);
-
-
-
- //delete chat (need to delete the conversation and all the messages linked to convo)
- router.delete("/conversations/:id/delete");
 export default router;
