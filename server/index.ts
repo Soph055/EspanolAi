@@ -8,8 +8,8 @@ import morgan from 'morgan';
 import authRouter from './routes/auth';
 import chatRouter from './routes/chat';
 import vocabularyRouter from './routes/vocabulary';
+import quizRouter from './routes/quiz';
 //import uploadRouter from'./routes/upload';
-//import quizRouter from './routes/quiz';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -31,7 +31,7 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
  app.use('/chat', chatRouter);
  app.use('/vocabulary', vocabularyRouter);
  //app.use('/upload'. uploadRouter);
- //app.use('/quiz', quizRouter);
+ app.use('/quiz', quizRouter);
  
 
 

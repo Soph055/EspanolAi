@@ -1,12 +1,9 @@
 import express from "express";
 import requireAuth from "../middleware/authMiddleware";
-//import * from "../controllers/quizController"; 
+import * as quizController from  "../controllers/quizController"; 
 
 
-
-//start quiz 
-
-//Refresh quiz
-
-//restart quiz
-
+const router = express.Router();
+//Generates new quiz
+router.post("/", requireAuth, quizController.createQuiz);
+export default router;
