@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
 import db from '../db/db';
 import logger from '../lib/logger';
-import { generateChatResponse, generateContent } from '../lib/gemini'
+import { generateChatResponse } from '../lib/gemini'
 import { z } from 'zod';
 import { PoolClient } from "pg";
 
 
-
+// System prompt for Gemini - defines tutor behavior, language mode rules, and correction depth
 const CHAT_SYSTEM_INSTRUCTION = `You are a friendly, encouraging Spanish language tutor having a natural conversation with an English-speaking learner.
 
 Default mode (teaching/correcting):
@@ -34,6 +34,7 @@ Keep responses warm and conversational - like a tutor sitting next to them. Use 
 
 Format your responses so corrected or example Spanish sentences appear clearly, usually at the end.`;
 
+// Validation schemas
 const createConversationSchema = z.object({
     title: z.string().trim().max(100).optional(),
 });
@@ -42,6 +43,9 @@ const sendMessageSchema = z.object({
     content: z.string().trim().min(1, "Message cannot be empty").max(2000),
 });
 
+// -------- Create Conversation --------
+// Inserts a new empty conversation for the user. Title is optional.
+// Returns the full new conversation row so the frontend can navigate to it immediately.
 export const createConversation = async (req: Request, res: Response): Promise<Response> => {
     const parsed = createConversationSchema.safeParse(req.body);
 
@@ -53,6 +57,7 @@ export const createConversation = async (req: Request, res: Response): Promise<R
     const { title } = parsed.data;
 
     try {
+        // RETURNING * gives back the new row in one query instead of a separate SELECT
         const result = await db.query(
             `INSERT INTO conversations (user_id, title) VALUES ($1, $2) RETURNING *`,
             [userId, title]
@@ -66,6 +71,9 @@ export const createConversation = async (req: Request, res: Response): Promise<R
     }
 };
 
+// -------- Get All Conversations --------
+// Lists all conversations for the logged-in user, sorted by most recent activity
+// (updated_at, not created_at, so active chats bubble to the top of the sidebar).
 export const getConversations = async (req: Request, res: Response): Promise<Response> => {
     const userId = req.user?.id;
 
@@ -75,6 +83,7 @@ export const getConversations = async (req: Request, res: Response): Promise<Res
             [userId]
         );
 
+        // Returning result.rows (the array) - empty array is fine if user has no conversations
         return res.status(200).json(result.rows);
 
     } catch (err) {
@@ -83,6 +92,10 @@ export const getConversations = async (req: Request, res: Response): Promise<Res
     }
 };
 
+// -------- Get All Messages In A Conversation --------
+// Loads the message history of one conversation, oldest first.
+// Uses a JOIN to enforce ownership - if the conversation doesn't belong to this user,
+// the WHERE clause filters out all rows and we return [].
 export const getAllMessages = async (req: Request, res: Response): Promise<Response> => {
     const conversationId = req.params.id;
     const userId = req.user?.id;
@@ -90,10 +103,10 @@ export const getAllMessages = async (req: Request, res: Response): Promise<Respo
     try {
         const result = await db.query(
             `SELECT m.* 
-         FROM messages m
-         JOIN conversations c ON c.id = m.conversation_id
-         WHERE c.id = $1 AND c.user_id = $2
-         ORDER BY m.created_at ASC`,
+             FROM messages m
+             JOIN conversations c ON c.id = m.conversation_id
+             WHERE c.id = $1 AND c.user_id = $2
+             ORDER BY m.created_at ASC`,
             [conversationId, userId]
         );
         return res.status(200).json(result.rows);
@@ -101,11 +114,14 @@ export const getAllMessages = async (req: Request, res: Response): Promise<Respo
     } catch (err) {
         logger.error("[chatController.getAllMessages]", err);
         return res.status(500).json({ message: "Failed to fetch messages" });
-
     }
 };
 
-
+// -------- Send Message --------
+// Saves the user's message, fetches conversation history, calls Gemini, saves the AI response,
+// and updates the conversation timestamp.
+// Uses two separate transactions with the Gemini call in between - this keeps DB connections
+// from being held open during the slow external API call.
 export const sendMessage = async (req: Request, res: Response): Promise<Response> => {
     const parsed = sendMessageSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -116,29 +132,34 @@ export const sendMessage = async (req: Request, res: Response): Promise<Response
     const userId = req.user?.id;
     const { content } = parsed.data;
 
+    // Declared outside the try block so they're accessible after the transaction closes
     let history: { role: string; content: string }[];
     let aiResponse: string;
 
-    // ===== First transaction: ownership check + save user message + fetch history =====
+    // ===== Transaction 1: ownership check + save user message + fetch history =====
     const client: PoolClient = await db.connect();
     try {
         await client.query('BEGIN');
 
+        // FOR UPDATE locks the conversation row so it can't be deleted mid-transaction
         const ownerCheck = await client.query(
             `SELECT id FROM conversations WHERE id = $1 AND user_id = $2 FOR UPDATE`,
             [conversationId, userId]
         );
 
+        // 404 (not 403) to hide whether the conversation exists from unauthorized users
         if (ownerCheck.rowCount === 0) {
             await client.query('ROLLBACK');
             return res.status(404).json({ message: "Conversation not found" });
         }
 
+        // Save the user's message
         await client.query(
             `INSERT INTO messages (conversation_id, role, content) VALUES ($1, $2, $3)`,
             [conversationId, 'user', content]
         );
 
+        // Fetch full history (including the just-saved user message) to send to Gemini
         const historyResult = await client.query(
             `SELECT role, content FROM messages WHERE conversation_id = $1 ORDER BY created_at ASC`,
             [conversationId]
@@ -152,10 +173,12 @@ export const sendMessage = async (req: Request, res: Response): Promise<Response
         logger.error("[chatController.sendMessage] tx1 failed", err);
         return res.status(500).json({ message: "Failed to send message" });
     } finally {
+        // Always release the connection back to the pool, even on error
         client.release();
     }
 
-    // ===== Gemini call (no transaction) =====
+    // ===== Gemini call (outside any transaction since it's a slow external API) =====
+    // Separate try/catch - if AI fails, we don't roll back the user's message (they did send it)
     try {
         aiResponse = await generateChatResponse(
             history as { role: 'user' | 'assistant'; content: string }[],
@@ -166,16 +189,19 @@ export const sendMessage = async (req: Request, res: Response): Promise<Response
         return res.status(500).json({ message: "Failed to generate response" });
     }
 
-   const client2: PoolClient = await db.connect();
+    // ===== Transaction 2: save AI response + bump conversation timestamp =====
+    const client2: PoolClient = await db.connect();
 
     try {
         await client2.query('BEGIN');
 
+        // Save the AI's response as an assistant message
         await client2.query(
             `INSERT INTO messages (conversation_id, role, content) VALUES ($1, $2, $3)`,
             [conversationId, 'assistant', aiResponse]
         );
 
+        // Update updated_at so this conversation bubbles to the top of the sidebar
         await client2.query(
             `UPDATE conversations SET updated_at = NOW() WHERE id = $1`,
             [conversationId]
@@ -196,39 +222,44 @@ export const sendMessage = async (req: Request, res: Response): Promise<Response
         client2.release();
     }
 };
-//TO BE TESTED FOR NOW!  sendMessage and DELETE and CHECKED WITH CLAUDE ASAP 
 
-export const deleteConversation = async (req: Request, res: Response) => {
+// -------- Delete Conversation --------
+// Removes a conversation and all its messages (messages cascade automatically via the FK).
+// Uses a transaction to lock the row during ownership check + delete.
+export const deleteConversation = async (req: Request, res: Response): Promise<Response> => {
     const conversationId = req.params.id;
     const userId = req.user?.id;
 
-    //owner check delete messages and then delete convo 
-    
-    const client :PoolClient = await db.connect();
+    const client: PoolClient = await db.connect();
     try {
-        client.query("BEGIN");
+        await client.query('BEGIN');
 
+        // Ownership check with row lock
         const ownerResult = await client.query(
-                `SELECT id FROM conversations WHERE id = $1 AND user_id = $2`,
-                [conversationId, userId]
+            `SELECT id FROM conversations WHERE id = $1 AND user_id = $2 FOR UPDATE`,
+            [conversationId, userId]
         );
 
-        if (ownerResult.rowCount === 0){
-            return res.status(404).json({message: "Conversation not found"});
+        if (ownerResult.rowCount === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ message: "Conversation not found" });
         }
 
-        //delete all messages related to conversation and then delete conversation 
-        client.query(
-           ` DELETE FROM conversations WHERE id = $1 `, [conversationId])
-        client.query("COMMIT")
+        // Delete the conversation - messages auto-delete via ON DELETE CASCADE
+        await client.query(
+            `DELETE FROM conversations WHERE id = $1`,
+            [conversationId]
+        );
 
-        return res.status(200);
-    }catch (err){
-        client.query("ROLLBACK");
+        await client.query('COMMIT');
+
+        return res.status(200).json({ message: "Conversation deleted" });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
         logger.error("[chatController.deleteConversation]", err);
-        return res.status(500).json({message: "Could not delete conversation"})
-
-    }finally{
+        return res.status(500).json({ message: "Could not delete conversation" });
+    } finally {
         client.release();
     }
 };
