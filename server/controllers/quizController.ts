@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { generateContent } from "../lib/gemini";
 import logger from "../lib/logger";
 import { z } from "zod";
+import { PoolClient } from "pg";
 
 // System prompt for Gemini - defines quiz generation rules and required JSON output format
 const QUIZ_SYSTEM_INSTRUCTION = `You are a Spanish quiz generator. Given a list of Spanish words with their English translations and IDs, generate multiple-choice questions.
@@ -32,6 +33,14 @@ The order of options should be random. The correctAnswer must appear exactly onc
 // questionCount is optional, defaults to 10 if not provided
 const quizSchema = z.object({
     questionCount: z.number().int().min(5).max(20).default(10),
+});
+
+const submitQuizSchema = z.object({
+    answers: z.array(z.object({
+        vocabularyId: z.number().int().positive(),
+        userAnswer: z.string().trim().min(1),
+        correctAnswer: z.string().trim().min(1)
+    })).min(1, "At least 1 answer required").max(20),
 });
 
 // -------- Create Quiz --------
@@ -93,5 +102,54 @@ export const createQuiz = async (req: Request, res: Response): Promise<Response>
     } catch (err) {
         logger.error("[quizController.createQuiz]", err);
         return res.status(500).json({ message: "Failed to generate quiz" });
+    }
+};
+export const submitQuiz = async (req: Request, res: Response): Promise<Response> => {
+    const parsed = submitQuizSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+        return res.status(400).json({ message: parsed.error.issues[0].message });
+    }
+
+    const userId = req.user?.id;
+    const { answers } = parsed.data;
+    const client: PoolClient = await db.connect();
+    let correctCount = 0;
+    let incorrectCount = 0;
+
+    try {
+        await client.query("BEGIN");
+
+        for (const answer of answers) {
+            const isCorrect = answer.userAnswer.toLowerCase() === answer.correctAnswer.toLowerCase();
+            const columnToInc = isCorrect ? 'times_correct' : 'times_incorrect';
+
+            await client.query(
+                `UPDATE vocabulary SET ${columnToInc} = ${columnToInc} + 1 WHERE id = $1 AND user_id = $2`,
+                [answer.vocabularyId, userId]
+            );
+
+            if (isCorrect) {
+                correctCount++;
+            } else {
+                incorrectCount++;
+            }
+        }
+
+        await client.query("COMMIT");
+
+        return res.status(200).json({
+            totalQuestions: answers.length,
+            correctCount,
+            incorrectCount,
+            score: `${Math.round((correctCount / answers.length) * 100)}%`
+        });
+
+    } catch (err) {
+        await client.query("ROLLBACK");
+        logger.error("[quizController.submitQuiz]", err);
+        return res.status(500).json({ message: "Failed to update results" });
+    } finally {
+        client.release();
     }
 };
