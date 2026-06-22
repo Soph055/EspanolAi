@@ -17,4 +17,5 @@ router.get("/:id", requireAuth, documentsController.getDocument);
 // Delete a document (removes from both DB and S3)
 router.delete("/:id", requireAuth, documentsController.deleteDocument);
 
+router.post("/:id/questions", requireAuth, documentsController.generateQuestions);
 export default router;
