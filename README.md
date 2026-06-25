@@ -43,21 +43,6 @@
 
 ---
 
-## Security Highlights
-
-- JWT in httpOnly cookies (XSS protection)
-- bcrypt password hashing (12 rounds)
-- Email verification required before login
-- Rate limiting on auth endpoints
-- Generic "Invalid credentials" responses to prevent email enumeration
-- AWS IAM least-privilege policies
-- Ownership enforcement on every resource (chats, documents, vocabulary)
-- PostgreSQL transactions with row-level locking on multi-step operations
-- Zod validation on every endpoint
-- helmet + CORS configured
-
----
-
 ## Status
 
 🟢 Backend complete  
