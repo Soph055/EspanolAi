@@ -6,16 +6,17 @@
   --font-display: "Fraunces", ui-serif, Georgia, serif;
 
   /* Colors */
-  --color-background: #fdf9f3;
-  --color-foreground: #2a1810;
-  --color-muted: #f5ede2;
-  --color-muted-foreground: #6b5849;
-  --color-primary: #c8442a;
-  --color-primary-hover: #b03a24;
+  --color-background: #fbf7ee;
+  --color-foreground: #2b1e17;
+  --color-muted: #f4ecdd;
+  --color-muted-foreground: #7a6752;
+  --color-primary: #c4402c;
+  --color-primary-hover: #a5341f;
+  --color-primary-light: #dd5a3e;
   --color-primary-foreground: #ffffff;
   --color-card: #ffffff;
-  --color-border: #e8dcc8;
-  --color-input: #faf5eb;
+  --color-border: #ebe0cc;
+  --color-input: #f8f2e5;
   --color-destructive: #dc2626;
 }
 
@@ -23,11 +24,17 @@ body {
   background-color: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans);
-  background-image: radial-gradient(
-    ellipse 900px 500px at 50% -10%,
-    rgba(200, 68, 42, 0.12),
-    transparent 60%
-  );
+  background-image:
+    radial-gradient(
+      ellipse 1000px 700px at 50% -10%,
+      rgba(196, 64, 44, 0.18),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 700px 500px at 90% 20%,
+      rgba(221, 90, 62, 0.10),
+      transparent 60%
+    );
   background-attachment: fixed;
   min-height: 100vh;
 }
