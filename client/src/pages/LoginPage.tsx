@@ -1,6 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent} from 'react';
+import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom'
 
 function LoginPage() {
+    const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +27,7 @@ function LoginPage() {
     const data = await response.json();
     
     if (response.ok) {
-        // success
+        navigate('/dashboard');
     } else {
         setErrorMessage(data.message);
     }
@@ -73,7 +76,7 @@ function LoginPage() {
                                 type="email"
                                 value={email}
                                 placeholder="Enter your email"
-                                className="w-full bg-input border border-border rounded-lg px-4 py-3 focus:outline-none focus:border-primary transition"
+                                className="w-full bg-input border border-border rounded-2xl px-4 py-3 focus:outline-none focus:border-primary transition"
                                 onChange={e => setEmail(e.target.value)}
                             />
                         </div>
@@ -91,7 +94,7 @@ function LoginPage() {
                                 type="password"
                                 value={password}
                                 placeholder="Enter your password"
-                                className="w-full bg-input border border-border rounded-lg px-4 py-3 focus:outline-none focus:border-primary transition"
+                                className="w-full bg-input border border-border rounded-2xl px-4 py-3 focus:outline-none focus:border-primary transition"
                                 onChange={e => setPassword(e.target.value)}
                             />
                         </div>
@@ -102,7 +105,7 @@ function LoginPage() {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-gradient-to-r from-primary to-primary-light text-primary-foreground py-3 rounded-xl font-medium hover:opacity-90 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="w-full bg-gradient-to-r from-primary to-primary-light text-primary-foreground py-3 rounded-2xl font-medium hover:opacity-90 transition disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             {isLoading ? 'Logging in...' : 'Log in →'}
                         </button>
@@ -110,12 +113,12 @@ function LoginPage() {
 
                 </div>
 
-                {/* Sign up link */}
+                {/* register link */}
                 <p className="text-muted-foreground">
                     Don't have an account?{' '}
-                    <a href="/signup" className="font-semibold text-foreground hover:text-primary transition">
+                    <Link to="/register" className="font-semibold text-foreground hover:text-primary transition">
                         Sign up
-                    </a>
+                    </Link>
                 </p>
 
             </div>
