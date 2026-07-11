@@ -1,6 +1,7 @@
 import { useState, type FormEvent} from 'react';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom'
+import {Logo} from '../components/Logo'
 
 function LoginPage() {
     const navigate = useNavigate();
@@ -44,15 +45,9 @@ function LoginPage() {
     return (
         <div className="min-h-screen flex flex-col items-center p-6">
 
+
             {/* Top: Logo */}
-            <div className="flex items-center gap-3 pt-12">
-                <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-                    <span className="font-display text-primary-foreground text-xl leading-none">ñ</span>
-                </div>
-                <span className="font-display text-2xl font-semibold">
-                    Español<span className="text-primary">AI</span>
-                </span>
-            </div>
+            <Logo />
 
             {/* Middle: Card + Sign up link */}
             <div className="flex-1 flex flex-col justify-center items-center w-full gap-6 py-12">
