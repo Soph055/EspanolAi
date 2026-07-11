@@ -63,7 +63,7 @@ export const register = async (req: Request, res: Response): Promise<Response> =
         );
 
         // Build verification URL and send email (fire-and-forget - don't block response on email send)
-        const verifyURL = `${process.env.FRONTEND_URL}/auth/verify/${verifyToken}`;
+        const verifyURL = `${process.env.FRONTEND_URL}/verify/${verifyToken}`;
 
         sendEmail({
             to: email,
@@ -220,7 +220,7 @@ export const requestResetPassword = async (req: Request, res: Response): Promise
         // Only send the email if we actually matched a user
         // (truthy check handles the null case TypeScript warns about for rowCount)
         if (data.rowCount && data.rowCount > 0) {
-            const resetURL = `${process.env.FRONTEND_URL}/auth/reset-password/${resetToken}`;
+            const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
             sendEmail({
                 to: email,
