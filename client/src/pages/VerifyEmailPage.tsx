@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Logo } from '../components/Logo'
 
@@ -6,7 +6,44 @@ function VerifyEmailPage() {
     const { token } = useParams();
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
     const [errorMessage, setErrorMessage] = useState('');
+    const hasVerified = useRef(false);
 
+    useEffect(() => {
+         // Guard against StrictMode's double-invoke firing this twice in dev
+              if (hasVerified.current) return;
+                hasVerified.current = true;
+                
+        const verifyToken = async () => {
+            //if no token fail immediately 
+            if (!token) {
+                setStatus('error');
+                setErrorMessage('No token provided.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/verify/${token}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    setStatus('success');
+
+                } else {
+                    setStatus('error');
+                    setErrorMessage(data.message || 'Verification failed.');
+
+                }
+            } catch (err) {
+                console.error(err);
+                setStatus('error');
+                setErrorMessage('Something went wrong. Please try again');
+            }
+        };
+
+        verifyToken();
+
+
+    }, [token]);
 
     return (
 
@@ -32,7 +69,7 @@ function VerifyEmailPage() {
                     )}
 
                     {/**Status Success */}
-                    {status === 'sucess' && (
+                    {status === 'success' && (
                         <>
                             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
                                 <span className="text-primary text-4xl">✓</span>
