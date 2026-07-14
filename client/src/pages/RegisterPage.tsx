@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {Logo} from '../components/Logo'
+import Footer from '../components/Footer';
 
 function RegisterPage() {
     const [firstName, setFirstName] = useState('');
@@ -188,10 +189,7 @@ function RegisterPage() {
 
             </div>
 
-            {/* Bottom: Footer */}
-            <footer className="text-sm text-muted-foreground">
-                © 2026 EspañolAI · Aprende sin límites
-            </footer>
+               <Footer />
 
         </div>
     );

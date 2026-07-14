@@ -2,6 +2,7 @@ import { useState, type FormEvent} from 'react';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom'
 import {Logo} from '../components/Logo'
+import Footer from '../components/Footer';
 
 function LoginPage() {
     const navigate = useNavigate();
@@ -118,10 +119,7 @@ function LoginPage() {
 
             </div>
 
-            {/* Footer */}
-            <footer className="text-sm text-muted-foreground">
-                © 2026 EspañolAI · Aprende sin límites
-            </footer>
+               <Footer />
 
         </div>
     );

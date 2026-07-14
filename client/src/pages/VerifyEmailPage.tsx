@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Logo } from '../components/Logo'
+import Footer from '../components/Footer';
 
 function VerifyEmailPage() {
     const { token } = useParams();
@@ -12,7 +13,7 @@ function VerifyEmailPage() {
          // Guard against StrictMode's double-invoke firing this twice in dev
               if (hasVerified.current) return;
                 hasVerified.current = true;
-                
+
         const verifyToken = async () => {
             //if no token fail immediately 
             if (!token) {
@@ -108,7 +109,7 @@ function VerifyEmailPage() {
                 </div>
             </div>
 
-
+                   <Footer />
 
 
         </div>
