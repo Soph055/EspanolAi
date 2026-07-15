@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import Footer from '../components/Footer';
 
 // -------- Request Reset Password --------
 // Step 1 of the password reset flow.
@@ -116,10 +117,7 @@ function RequestResetPasswordPage() {
 
             </div>
 
-            {/* Bottom: Footer */}
-            <footer className="text-sm text-muted-foreground">
-                © 2026 EspañolAI · Aprende sin límites
-            </footer>
+            <Footer />
 
         </div>
     );
