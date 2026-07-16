@@ -81,9 +81,9 @@ function LoginPage() {
                         <div className="mb-6">
                             <div className="flex flex-row justify-between items-center mb-2">
                                 <label htmlFor="password" className="text-sm font-medium">PASSWORD</label>
-                                <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition">
+                                <Link to="/reset-password" className="text-sm text-muted-foreground hover:text-foreground transition">
                                     Forgot password?
-                                </a>
+                                </Link>
                             </div>
                             <input
                                 id="password"
