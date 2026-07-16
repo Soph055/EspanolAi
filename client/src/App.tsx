@@ -3,6 +3,8 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import RequestResetPage from './pages/RequestResetPage';
+import ConfirmResetPage from './pages/ConfirmResetPage';
+
 
 function App() {
   return (
@@ -12,6 +14,7 @@ function App() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/verify/:token" element={<VerifyEmailPage />} />
       <Route path="/reset-password" element={<RequestResetPage />} />
+      <Route path="/reset-password/:token" element={<ConfirmResetPage />} />
     </Routes>
 
   )
