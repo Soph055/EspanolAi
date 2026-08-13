@@ -7,7 +7,7 @@ const router = express.Router();
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, //15 minute window
-    limit: 10, //max 10 requests per IP
+    limit: 1000, //max 10 requests per IP
     standardHeaders: 'draft-8', //adds rate limit info to reponse headers
     legacyHeaders: false,
 });

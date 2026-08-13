@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom'
 import {Logo} from '../components/Logo'
 import Footer from '../components/Footer';
+import {useAuth} from  '../context/AuthContext'
 
 function LoginPage() {
     const navigate = useNavigate();
@@ -10,6 +11,7 @@ function LoginPage() {
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const  {checkAuth} = useAuth();
 
     const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -27,8 +29,9 @@ function LoginPage() {
             body: JSON.stringify({ email, password }),
         });
     const data = await response.json();
-    
+
     if (response.ok) {
+        await checkAuth();
         navigate('/dashboard');
     } else {
         setErrorMessage(data.message);
