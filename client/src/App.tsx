@@ -15,6 +15,7 @@ function App() {
       <Route path="/verify/:token" element={<VerifyEmailPage />} />
       <Route path="/reset-password" element={<RequestResetPage />} />
       <Route path="/reset-password/:token" element={<ConfirmResetPage />} />
+      
     </Routes>
 
   )

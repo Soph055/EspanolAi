@@ -144,7 +144,6 @@ function ConfirmResetPage() {
 
             {/* Bottom: Footer */}
            <Footer />
-
         </div>
     );
 }

@@ -30,4 +30,6 @@ router.post("/reset-password/:token", authLimiter, authController.confirmPasswor
 //logout
 router.post('/logout', authController.logout);
 
+//check if user is logged in on frontend
+router.get('/me',requireAuth, authController.getMe);
 export default router; 

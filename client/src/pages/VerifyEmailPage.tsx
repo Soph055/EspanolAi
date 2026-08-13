@@ -28,7 +28,7 @@ function VerifyEmailPage() {
 
                 if (response.ok) {
                     setStatus('success');
-
+                                                        
                 } else {
                     setStatus('error');
                     setErrorMessage(data.message || 'Verification failed.');

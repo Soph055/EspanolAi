@@ -182,6 +182,39 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
     }
 };
 
+// -------- Get Current User --------
+// Returns basic info about the logged-in user based on their JWT cookie.
+// The requireAuth middleware verifies the token; if invalid, it returns 401
+// before this handler even runs.
+export const getMe = async (req: Request, res: Response): Promise<Response> => {
+    const userId = req.user?.id;
+
+    try {
+        const result = await db.query(
+            "SELECT id, first_name, last_name, email FROM users WHERE id = $1",
+            [userId]
+        );
+
+        const user = result.rows[0];
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        return res.status(200).json({
+            id: user.id,
+            firstName: user.first_name,
+            lastName: user.last_name,
+            email: user.email,
+        });
+
+    } catch (err) {
+        logger.error("[authController.getMe]", err);
+        return res.status(500).json({ message: "Server error" });
+    }
+};
+
+
 // -------- Logout --------
 // Clears the auth cookie. No DB operation needed since JWTs are stateless.
 export const logout = async (req: Request, res: Response): Promise<Response> => {
