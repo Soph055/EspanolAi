@@ -6,7 +6,8 @@ import RequestResetPage from './pages/RequestResetPage'
 import ConfirmResetPage from './pages/ConfirmResetPage'
 import DashboardPage from './pages/DashboardPage'
 import ProtectedRoute from './components/ProtectedRoute'
-
+import AppShell from './components/layout/AppShell'
+ 
 function App() {
   return (
     <Routes>
@@ -19,14 +20,12 @@ function App() {
       <Route path="/reset-password/:token" element={<ConfirmResetPage />} />
 
       {/* Protected routes */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-      />
+     
+      <Route element={<ProtectedRoute><AppShell /> </ProtectedRoute>}>
+        <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="chat" element={<DashboardPage />} />
+        <Route path ="vocbulary" element={<DashboardPage />} />
+    </Route>
     </Routes>
   )
 }
