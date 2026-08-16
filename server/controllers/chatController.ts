@@ -36,7 +36,7 @@ Format your responses so corrected or example Spanish sentences appear clearly, 
 
 // Validation schemas
 const createConversationSchema = z.object({
-    title: z.string().trim().max(100).optional(),
+    title: z.string().trim().max(100).nullable().optional(),
 });
 
 const sendMessageSchema = z.object({

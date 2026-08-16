@@ -7,6 +7,7 @@ import ConfirmResetPage from './pages/ConfirmResetPage'
 import DashboardPage from './pages/DashboardPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import AppShell from './components/layout/AppShell'
+import ChatPage from './pages/ChatPage'
  
 function App() {
   return (
@@ -23,7 +24,7 @@ function App() {
      
       <Route element={<ProtectedRoute><AppShell /> </ProtectedRoute>}>
         <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="chat" element={<DashboardPage />} />
+        <Route path="chat" element={<ChatPage />} />
         <Route path ="vocbulary" element={<DashboardPage />} />
     </Route>
     </Routes>
