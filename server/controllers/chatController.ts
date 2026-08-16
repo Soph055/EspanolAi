@@ -60,7 +60,7 @@ export const createConversation = async (req: Request, res: Response): Promise<R
         // RETURNING * gives back the new row in one query instead of a separate SELECT
         const result = await db.query(
             `INSERT INTO conversations (user_id, title) VALUES ($1, $2) RETURNING *`,
-            [userId, title]
+            [userId, title ?? null]
         );
 
         return res.status(201).json(result.rows[0]);

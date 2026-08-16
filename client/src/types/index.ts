@@ -5,7 +5,7 @@ export interface Conversation {
     updated_at: string;
 }
 
-export interface message {
+export interface Message {
     id: number;
     conversation_id: number;
     role: 'user' | 'assistant';
