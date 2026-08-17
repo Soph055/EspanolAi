@@ -12,3 +12,12 @@ export interface Message {
     content: string;
     created_at: string;
 }
+
+export interface Word {
+    id: number;
+    word: string;
+    translation: string;
+    times_correct: number;
+    times_incorrect: number;
+    created_at: string;
+}
