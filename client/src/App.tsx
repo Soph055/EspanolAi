@@ -9,6 +9,8 @@ import ProtectedRoute from './components/ProtectedRoute'
 import AppShell from './components/layout/AppShell'
 import ChatPage from './pages/ChatPage'
 import VocabularyPage from './pages/VocabularyPage'
+import QuizPage from './pages/QuizPage'
+
  
 function App() {
   return (
@@ -27,6 +29,7 @@ function App() {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="chat" element={<ChatPage />} />
         <Route path ="vocabulary" element={<VocabularyPage />} />
+        <Route path ="quiz" element={<QuizPage />} />
     </Route>
     </Routes>
   )

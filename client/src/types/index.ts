@@ -21,3 +21,10 @@ export interface Word {
     times_incorrect: number;
     created_at: string;
 }
+
+export interface QuizQuestion {
+    vocabularyId: number;
+    word: string;
+    options: string[];
+    correctAnswer: string;
+}
