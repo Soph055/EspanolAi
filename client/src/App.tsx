@@ -10,6 +10,7 @@ import AppShell from './components/layout/AppShell'
 import ChatPage from './pages/ChatPage'
 import VocabularyPage from './pages/VocabularyPage'
 import QuizPage from './pages/QuizPage'
+import DocumentsPage from './pages/DocumentsPage'
 
  
 function App() {
@@ -30,6 +31,7 @@ function App() {
         <Route path="chat" element={<ChatPage />} />
         <Route path ="vocabulary" element={<VocabularyPage />} />
         <Route path ="quiz" element={<QuizPage />} />
+        <Route path ="documents" element={<DocumentsPage />} />
     </Route>
     </Routes>
   )

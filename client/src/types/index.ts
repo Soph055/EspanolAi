@@ -28,3 +28,18 @@ export interface QuizQuestion {
     options: string[];
     correctAnswer: string;
 }
+
+export interface Document {
+    id: number;
+    filename: string;
+    file_type: 'pdf' | 'docx' | 'txt';
+    file_size: number;
+    created_at: string;
+    extracted_text?: string;
+}
+
+export interface DocumentQuestion {
+    question: string;
+    options: string[];
+    correctAnswer: string;
+}

@@ -113,7 +113,7 @@ function QuizPage() {
     const answeredCount = Object.keys(answers).length;
 
     return (
-        <div className="p-8 max-w-4xl mx-auto">
+        <div className="p-8  mx-auto">
 
             {/* Header - shown in every phase */}
             <div className="mb-8">
