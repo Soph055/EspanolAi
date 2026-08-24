@@ -161,7 +161,7 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
         const token = jwt.sign(
             { id: user.id, email: email },
             JWT_SECRET,
-            { expiresIn: "1h" }
+            { expiresIn: "7d" }
         );
 
         // Set the JWT as an httpOnly cookie so JavaScript can't access it (XSS protection)
@@ -170,7 +170,7 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "strict",
-            maxAge: 1000 * 60 * 60,
+            maxAge:  7 * 24 * 60 * 60 * 1000,
         });
 
         logger.info(`User logged in: ${email}`);

@@ -179,6 +179,31 @@ function ChatPage() {
         }
     };
 
+    const handleDeleteConversation = async (id: number) => {
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/chat/conversations/${id}`, {
+                method: 'DELETE',
+                credentials: 'include',
+            });
+    
+            if (response.ok) {
+                setConversations(prev => prev.filter(c => c.id !== id));
+                // If we deleted the open conversation, clear the thread
+                if (selectedId === id) {
+                    setSelectedId(null);
+                    setMessages([]);
+                }
+            } else {
+                const data = await response.json();
+                setErrorMessage(data.message);
+            }
+        } catch (err) {
+            console.error('[handleDeleteConversation]', err);
+            setErrorMessage('Could not delete conversation.');
+        }
+    };
+
+
     return (
         <div className="flex h-screen">
 
@@ -285,22 +310,36 @@ function ChatPage() {
                 ) : (
                     <div className="flex flex-col gap-1">
                         {conversations.map(conversation => (
-                            <button
-                                type="button"
-                                key={conversation.id}
-                                onClick={() => setSelectedId(conversation.id)}
-                                className={`w-full text-left px-3 py-2 rounded-lg transition ${selectedId === conversation.id
-                                        ? 'bg-primary/10 text-primary font-medium'
-                                        : 'text-foreground hover:bg-muted'
-                                    }`}
-                            >
-                                <span className="block truncate">
-                                    {conversation.title || 'New conversation'}
-                                </span>
-                                <span className="block text-xs text-muted-foreground">
-                                    {new Date(conversation.updated_at).toLocaleDateString()}
-                                </span>
-                            </button>
+                           <div
+                           key={conversation.id}
+                           className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition ${
+                               selectedId === conversation.id
+                                   ? 'bg-primary/10 text-primary font-medium'
+                                   : 'text-foreground hover:bg-muted'
+                           }`}
+                       >
+                           <button
+                               type="button"
+                               onClick={() => setSelectedId(conversation.id)}
+                               className="flex-1 text-left min-w-0"
+                           >
+                               <span className="block truncate">
+                                   {conversation.title || 'New conversation'}
+                               </span>
+                               <span className="block text-xs text-muted-foreground">
+                                   {new Date(conversation.updated_at).toLocaleDateString()}
+                               </span>
+                           </button>
+                       
+                           <button
+                               type="button"
+                               onClick={() => handleDeleteConversation(conversation.id)}
+                               className="shrink-0 ml-2 text-muted-foreground hover:text-destructive transition text-sm"
+                               aria-label="Delete conversation"
+                           >
+                               ✕
+                           </button>
+                       </div>
                         ))}
                     </div>
                 )}
