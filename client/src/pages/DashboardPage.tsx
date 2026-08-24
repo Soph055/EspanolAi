@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import type { Conversation } from '../types';
-import { MessageIcon, BookIcon, SparklesIcon, FileIcon, ArrowRightIcon } from '../components/icons';
+import { MessageIcon, BookIcon, SparklesIcon, FileIcon, ArrowRightIcon } from '../components/Icons';
 
 function DashboardPage() {
     const { user } = useAuth();

@@ -14,7 +14,7 @@ function DocumentsPage() {
     // ----- Detail view state -----
     // null = list view; a document = detail view (with its extracted_text)
     const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
-    const [isLoadingDoc, setIsLoadingDoc] = useState(false);
+
 
     // ----- Questions state -----
     const [questions, setQuestions] = useState<DocumentQuestion[]>([]);
@@ -90,7 +90,7 @@ function DocumentsPage() {
     const handleOpen = async (id: number) => {
         setErrorMessage('');
         setQuestions([]);         // clear questions from any previously-opened doc
-        setIsLoadingDoc(true);
+    
 
         try {
             const response = await fetch(`${import.meta.env.VITE_API_URL}/documents/${id}`, {
@@ -106,9 +106,7 @@ function DocumentsPage() {
         } catch (err) {
             console.error('[handleOpen]', err);
             setErrorMessage('Could not open document.');
-        } finally {
-            setIsLoadingDoc(false);
-        }
+        } 
     };
 
     // Delete a document

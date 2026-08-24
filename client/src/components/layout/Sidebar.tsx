@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Logo from '../Logo';
-import { DashboardIcon, MessageIcon, BookIcon, SparklesIcon, FileIcon, LogoutIcon } from '../icons';
+import { DashboardIcon, MessageIcon, BookIcon, SparklesIcon, FileIcon, LogoutIcon } from '../Icons';
 
 
 
