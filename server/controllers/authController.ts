@@ -164,13 +164,14 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
             { expiresIn: "7d" }
         );
 
+        const isProduction = process.env.NODE_ENV === "production";
         // Set the JWT as an httpOnly cookie so JavaScript can't access it (XSS protection)
         // sameSite: strict prevents CSRF, secure: production-only HTTPS requirement
         res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-            maxAge:  7 * 24 * 60 * 60 * 1000,
+            secure: isProduction,                       // HTTPS only in prod
+            sameSite: isProduction ? "none" : "strict", // cross-site in prod, strict locally
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
         logger.info(`User logged in: ${email}`);
