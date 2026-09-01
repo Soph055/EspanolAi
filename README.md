@@ -10,8 +10,6 @@ An AI-powered Spanish learning platform that adapts to how you speak, what you r
 
 ## Screenshots
 
-> Replace these with your own images. Put files in a `screenshots/` folder at the repo root and the links below will resolve.
-
 ### Landing page
 ![Landing page](screenshots/landing.png)
 
