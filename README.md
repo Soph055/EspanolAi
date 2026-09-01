@@ -10,6 +10,8 @@ An AI-powered Spanish learning platform that adapts to how you speak, what you r
 
 ## Screenshots
 
+> Replace these with your own images. Put files in a `screenshots/` folder at the repo root and the links below will resolve.
+
 ### Landing page
 ![Landing page](screenshots/landing.png)
 
@@ -68,18 +70,20 @@ An AI-powered Spanish learning platform that adapts to how you speak, what you r
 ---
 
 ## Architecture
-Browser
-│
-▼
-Vercel (React frontend + /api/* reverse proxy)
-│
-▼
-Render (Express API)
-│
-├──▶ Supabase (PostgreSQL)
-├──▶ AWS S3 (document files)
-└──▶ Google Gemini (AI)
 
+```
+Browser
+   │
+   ▼
+Vercel (React frontend + /api/* reverse proxy)
+   │
+   ▼
+Render (Express API)
+   │
+   ├──▶ Supabase (PostgreSQL)
+   ├──▶ AWS S3 (document files)
+   └──▶ Google Gemini (AI)
+```
 
 Auth uses a JWT stored in an httpOnly cookie, so the token is never exposed to JavaScript. Protected routes on the frontend check auth status via a `/auth/me` endpoint before rendering.
 
@@ -100,6 +104,8 @@ npm install
 ```
 
 Create a `server/.env` file:
+
+```
 DB_URL=your_postgres_connection_string
 DB_PASSWORD=your_db_password
 JWT_SECRET=your_jwt_secret
@@ -112,7 +118,7 @@ EMAIL_USER=your_email
 EMAIL_PASS=your_email_app_password
 FRONTEND_URL=http://localhost:5173
 NODE_ENV=development
-
+```
 
 Then:
 
@@ -130,7 +136,10 @@ npm install
 ```
 
 Create a `client/.env` file:
+
+```
 VITE_API_URL=http://localhost:3000
+```
 
 Then:
 
@@ -143,24 +152,28 @@ The app runs on `http://localhost:5173`.
 ---
 
 ## Project Structure
-EspanolAi/
-├── client/ # React + Vite frontend
-│ ├── src/
-│ │ ├── components/ # Shared UI (layout, icons, ProtectedRoute)
-│ │ ├── context/ # AuthContext
-│ │ ├── pages/ # Login, Chat, Vocabulary, Quiz, Documents, Dashboard, etc.
-│ │ ├── types/ # Shared TypeScript interfaces
-│ │ └── App.tsx # Routes
-│ └── vercel.json # /api/* reverse proxy config
-│
-└── server/ # Express + TypeScript backend
-├── controllers/ # Route handlers
-├── routes/ # Auth, chat, vocabulary, quiz, documents
-├── middleware/ # Auth + file upload
-└── index.ts # App entry
 
+```
+EspanolAi/
+├── client/                 # React + Vite frontend
+│   ├── src/
+│   │   ├── components/      # Shared UI (layout, icons, ProtectedRoute)
+│   │   ├── context/         # AuthContext
+│   │   ├── pages/           # Login, Chat, Vocabulary, Quiz, Documents, Dashboard, etc.
+│   │   ├── types/           # Shared TypeScript interfaces
+│   │   └── App.tsx          # Routes
+│   └── vercel.json          # /api/* reverse proxy config
+│
+└── server/                 # Express + TypeScript backend
+    ├── controllers/         # Route handlers
+    ├── routes/              # Auth, chat, vocabulary, quiz, documents
+    ├── middleware/          # Auth + file upload
+    └── index.ts             # App entry
+```
+
+---
 ---
 
 ## Notes
 
-This project was built as a full-stack learning exercise, covering everything from JWT auth and cross-origin cookie handling to AI integration and production deployment. The backend was built first, followed by the React frontend from the ground up.
+This project was built as a full-stack learning exercise to solve my real problem of wanting to practice my spanish online without paying for a subscription, it covers everything from JWT auth and cross-origin cookie handling to AI integration and production deployment. The backend was built first, followed by the React frontend from the ground up.
